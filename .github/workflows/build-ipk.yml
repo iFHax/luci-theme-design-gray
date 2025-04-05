@@ -1,58 +1,61 @@
-name: Build LuCI Theme IPK (OpenWrt 21.02.1)
+name: Build LuCI Theme IPK (ImmortalWRT)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
-    - name: Checkout repository
+    - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Install dependencies
+    - name: Install Python 3.8 and Dependencies
       run: |
         sudo apt update
-        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget python3 gh
+        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget \
+                            python3.8 python3.8-distutils python3.8-venv libsqlite3-dev libtool python3-setuptools \
+                            python3-pip
+        sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+        sudo update-alternatives --set python3 /usr/bin/python3.8
+        python3 --version  # Verify Python version
+        python3 -m ensurepip --upgrade
+        python3 -m pip install --upgrade setuptools wheel  # Upgrade setuptools
 
-    - name: Download OpenWrt 21.02.1 SDK (x86_64)
+    - name: Check Python and Distutils
       run: |
-        wget https://downloads.openwrt.org/releases/21.02.1/targets/x86/64/openwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
-        tar -xf openwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
-        mv openwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64 openwrt-sdk
+        python3 -c "import distutils; print(distutils.__file__)" || echo "distutils not found"
+        python3 --version
 
-    - name: Clone luci-theme-design-gray repository
+    - name: Download ImmortalWRT SDK
+      run: |
+        wget https://downloads.immortalwrt.org/releases/21.02.1/targets/x86/64/immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
+        tar -xf immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
+        mv immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64 sdk
+
+    - name: Clone luci-theme-design-gray
       run: |
         git clone https://github.com/iFHax/luci-theme-design-gray.git
 
-    - name: Prepare the theme package
+    - name: Prepare theme package
       run: |
-        mkdir -p openwrt-sdk/package/luci-theme-design-gray
-        cp -r luci-theme-design-gray/* openwrt-sdk/package/luci-theme-design-gray/
+        mkdir -p sdk/package/luci-theme-design-gray
+        cp -r luci-theme-design-gray/* sdk/package/luci-theme-design-gray/
 
-    - name: Build the IPK
+    - name: Configure SDK with FORCE=1
       run: |
-        cd openwrt-sdk
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
+        cd sdk
+        echo "CONFIG_TARGET_x86=y" > .config
+        echo "CONFIG_TARGET_x86_64=y" >> .config
         make defconfig
-        make package/luci-theme-design-gray/compile V=s
+        FORCE=1 make tools/install -j$(nproc) V=s
+        FORCE=1 make toolchain/install -j$(nproc) V=s
 
-    - name: List result
+    - name: Build luci-theme-design-gray
       run: |
-        find openwrt-sdk/bin/ -name "*.ipk"
+        cd sdk
+        FORCE=1 make package/luci-theme-design-gray/compile -j$(nproc) V=s
 
-    - name: Authenticate GitHub CLI
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-
-    - name: Create GitHub Release and Upload IPK
-      run: |
-        RELEASE_TAG="v1.0"  # Modify to your desired release tag
-        IPK_FILE=$(find openwrt-sdk/bin/packages/*/*/luci-theme-design-gray_*.ipk)
-        
-        # Create a release
-        gh release create $RELEASE_TAG $IPK_FILE --title "LuCI Theme Design Gray v1.0" --notes "Initial release of luci-theme-design-gray IPK."
+    - name: List built IPK
+      run: find sdk/bin/packages/ -name "*.ipk"
