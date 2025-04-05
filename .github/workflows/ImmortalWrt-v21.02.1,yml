@@ -1,4 +1,3 @@
-
 name: Build LuCI Theme IPK (ImmortalWRT)
 
 on:
@@ -17,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget python3 gh
+        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget python3 libsqlite3-dev libtool
 
     - name: Download ImmortalWRT SDK (x86_64)
       run: |
@@ -34,13 +33,26 @@ jobs:
         mkdir -p immortalwrt-sdk/package/luci-theme-design-gray
         cp -r luci-theme-design-gray/* immortalwrt-sdk/package/luci-theme-design-gray/
 
-    - name: Build the IPK
+    - name: Clean previous builds
+      run: |
+        cd immortalwrt-sdk
+        make clean
+
+    - name: Update feeds and install packages
       run: |
         cd immortalwrt-sdk
         ./scripts/feeds update -a
         ./scripts/feeds install -a
+
+    - name: Set default configuration
+      run: |
+        cd immortalwrt-sdk
         make defconfig
-        make package/luci-theme-design-gray/compile V=s
+
+    - name: Build the IPK (Force)
+      run: |
+        cd immortalwrt-sdk
+        FORCE=1 make package/luci-theme-design-gray/compile V=s
 
     - name: List result
       run: |
