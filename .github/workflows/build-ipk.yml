@@ -33,6 +33,7 @@ jobs:
         wget https://downloads.immortalwrt.org/releases/21.02.1/targets/x86/64/immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
         tar -xf immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
         mv immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64 sdk
+        cd sdk  # Ensure we're inside the SDK directory
 
     - name: Clone luci-theme-design-gray
       run: |
@@ -67,10 +68,11 @@ jobs:
 
     - name: Disable specific firmware packages in .config
       run: |
+        cd sdk
         # Disable the firmware packages by modifying the .config file
-        sed -i 's/^CONFIG_PACKAGE_eip197-mini-firmware=y/# CONFIG_PACKAGE_eip197-mini-firmware is not set/' sdk/.config
-        sed -i 's/^CONFIG_PACKAGE_r8169-firmware=y/# CONFIG_PACKAGE_r8169-firmware is not set/' sdk/.config
-        sed -i 's/^CONFIG_PACKAGE_e100-firmware=y/# CONFIG_PACKAGE_e100-firmware is not set/' sdk/.config
+        sed -i 's/^CONFIG_PACKAGE_eip197-mini-firmware=y/# CONFIG_PACKAGE_eip197-mini-firmware is not set/' .config
+        sed -i 's/^CONFIG_PACKAGE_r8169-firmware=y/# CONFIG_PACKAGE_r8169-firmware is not set/' .config
+        sed -i 's/^CONFIG_PACKAGE_e100-firmware=y/# CONFIG_PACKAGE_e100-firmware is not set/' .config
 
     - name: Build luci-theme-design-gray
       run: |
@@ -78,4 +80,6 @@ jobs:
         FORCE=1 make package/luci-theme-design-gray/compile -j$(nproc) V=s
 
     - name: List built IPK
-      run: find sdk/bin/packages/ -name "*.ipk"
+      run: |
+        cd sdk
+        find bin/packages/ -name "*.ipk"
