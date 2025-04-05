@@ -21,7 +21,7 @@ jobs:
         sudo update-alternatives --set python3 /usr/bin/python3.8
         python3 --version  # Verify Python version
         python3 -m ensurepip --upgrade
-        python3 -m pip install --upgrade setuptools wheel
+        python3 -m pip install --upgrade setuptools wheel  # Upgrade setuptools
 
     - name: Check Python and Distutils
       run: |
