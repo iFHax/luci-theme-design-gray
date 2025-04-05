@@ -22,6 +22,11 @@ jobs:
         python3 -m ensurepip --upgrade
         python3 -m pip install --upgrade setuptools wheel
 
+    - name: Check Python and Distutils
+      run: |
+        python3 -c "import distutils; print(distutils.__file__)"
+        python3 --version
+
     - name: Download ImmortalWRT SDK
       run: |
         wget https://downloads.immortalwrt.org/releases/21.02.1/targets/x86/64/immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
