@@ -14,7 +14,8 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget python3 libsqlite3-dev libtool
+        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget \
+                            python3 python3-distutils python3-venv libsqlite3-dev libtool
 
     - name: Download ImmortalWRT SDK
       run: |
