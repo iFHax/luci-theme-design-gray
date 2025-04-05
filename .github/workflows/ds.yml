@@ -1,0 +1,38 @@
+name: OpenWRT Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up environment
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential git wget curl unzip
+
+    - name: Install dependencies
+      run: |
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Disable specific firmware packages in .config
+      run: |
+        # Disable the firmware packages by modifying the .config file
+        sed -i 's/^CONFIG_PACKAGE_eip197-mini-firmware=y/# CONFIG_PACKAGE_eip197-mini-firmware is not set/' .config
+        sed -i 's/^CONFIG_PACKAGE_r8169-firmware=y/# CONFIG_PACKAGE_r8169-firmware is not set/' .config
+        sed -i 's/^CONFIG_PACKAGE_e100-firmware=y/# CONFIG_PACKAGE_e100-firmware is not set/' .config
+
+    - name: Build OpenWRT
+      run: |
+        make -j$(nproc)
