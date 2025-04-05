@@ -49,6 +49,11 @@ jobs:
         mkdir -p sdk/package/luci-theme-design-gray
         cp -r luci-theme-design-gray/* sdk/package/luci-theme-design-gray/
 
+    - name: Clean SDK Environment
+      run: |
+        cd sdk
+        make distclean  # Clean previous build environment
+
     - name: Configure SDK with FORCE=1
       run: |
         cd sdk
