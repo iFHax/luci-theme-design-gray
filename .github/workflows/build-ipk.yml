@@ -1,6 +1,12 @@
-name: Build LuCI Theme IPK (ImmortalWRT)
+name: Build OpenWRT and LuCI Theme IPK (ImmortalWRT)
 
 on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -11,11 +17,11 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Install Python 3.8 and Dependencies
+    - name: Set up environment
       run: |
         sudo apt update
-        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget \
-                            python3.8 python3.8-distutils python3.8-venv libsqlite3-dev libtool python3-setuptools \
+        sudo apt install -y build-essential git wget curl unzip libncurses5-dev zlib1g-dev gawk gettext file \
+                            libssl-dev python3.8 python3.8-distutils python3.8-venv libsqlite3-dev libtool python3-setuptools \
                             python3-pip
         sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
         sudo update-alternatives --set python3 /usr/bin/python3.8
@@ -33,6 +39,18 @@ jobs:
           echo "Distutils module not found, installing..."
           sudo apt-get install -y python3-distutils
         fi
+
+    - name: Install dependencies
+      run: |
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Disable specific firmware packages in .config
+      run: |
+        # Disable the firmware packages by modifying the .config file
+        sed -i 's/^CONFIG_PACKAGE_eip197-mini-firmware=y/# CONFIG_PACKAGE_eip197-mini-firmware is not set/' .config
+        sed -i 's/^CONFIG_PACKAGE_r8169-firmware=y/# CONFIG_PACKAGE_r8169-firmware is not set/' .config
+        sed -i 's/^CONFIG_PACKAGE_e100-firmware=y/# CONFIG_PACKAGE_e100-firmware is not set/' .config
 
     - name: Download ImmortalWRT SDK
       run: |
@@ -64,6 +82,10 @@ jobs:
         FORCE=1 make clean
         FORCE=1 make tools/install -j$(nproc) V=s
         FORCE=1 make toolchain/install -j$(nproc) V=s
+
+    - name: Build OpenWRT
+      run: |
+        make -j$(nproc)
 
     - name: Build luci-theme-design-gray
       run: |
