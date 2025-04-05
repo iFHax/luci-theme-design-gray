@@ -18,13 +18,13 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget python3
 
-    - name: Download OpenWrt SDK
+    - name: Download OpenWrt 21.02.1 SDK
       run: |
-        wget https://downloads.openwrt.org/releases/22.03.6/targets/x86/64/openwrt-sdk-22.03.6-x86-64_gcc-11.2.0_musl.Linux-x86_64.tar.xz
-        tar -xf openwrt-sdk-*.tar.xz
-        mv openwrt-sdk-* openwrt-sdk
+        wget https://downloads.openwrt.org/releases/21.02.1/targets/x86/64/openwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
+        tar -xf openwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
+        mv openwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64 openwrt-sdk
 
-    - name: Prepare theme package
+    - name: Prepare LuCI theme package
       run: |
         mkdir -p openwrt-sdk/package/luci-theme-design-gray
         cp -r * openwrt-sdk/package/luci-theme-design-gray/
@@ -32,11 +32,13 @@ jobs:
     - name: Build the IPK
       run: |
         cd openwrt-sdk
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
         make defconfig
         make package/luci-theme-design-gray/compile V=s
 
     - name: Upload the built IPK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: luci-theme-design-gray-ipk
         path: openwrt-sdk/bin/packages/*/*/luci-theme-design-gray_*.ipk
