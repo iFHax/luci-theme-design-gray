@@ -28,30 +28,6 @@ jobs:
         python3 --version  # Verify Python version
         python3 -m pip install --upgrade setuptools wheel  # Upgrade setuptools
 
-    - name: Check Python and Distutils
-      run: |
-        python3 -c "import distutils; print(distutils.__file__)" || echo "distutils not found"
-        python3 --version
-
-    - name: Install Python3 distutils if not found
-      run: |
-        if ! python3 -c "import distutils" &> /dev/null; then
-          echo "Distutils module not found, installing..."
-          sudo apt-get install -y python3-distutils
-        fi
-
-    - name: Install dependencies
-      run: |
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
-
-    - name: Disable specific firmware packages in .config
-      run: |
-        # Disable the firmware packages by modifying the .config file
-        sed -i 's/^CONFIG_PACKAGE_eip197-mini-firmware=y/# CONFIG_PACKAGE_eip197-mini-firmware is not set/' .config
-        sed -i 's/^CONFIG_PACKAGE_r8169-firmware=y/# CONFIG_PACKAGE_r8169-firmware is not set/' .config
-        sed -i 's/^CONFIG_PACKAGE_e100-firmware=y/# CONFIG_PACKAGE_e100-firmware is not set/' .config
-
     - name: Download ImmortalWRT SDK
       run: |
         wget https://downloads.immortalwrt.org/releases/21.02.1/targets/x86/64/immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
@@ -83,9 +59,18 @@ jobs:
         FORCE=1 make tools/install -j$(nproc) V=s
         FORCE=1 make toolchain/install -j$(nproc) V=s
 
-    - name: Build OpenWRT
+    - name: Install OpenWRT Feeds
       run: |
-        make -j$(nproc)
+        cd sdk
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Disable specific firmware packages in .config
+      run: |
+        # Disable the firmware packages by modifying the .config file
+        sed -i 's/^CONFIG_PACKAGE_eip197-mini-firmware=y/# CONFIG_PACKAGE_eip197-mini-firmware is not set/' sdk/.config
+        sed -i 's/^CONFIG_PACKAGE_r8169-firmware=y/# CONFIG_PACKAGE_r8169-firmware is not set/' sdk/.config
+        sed -i 's/^CONFIG_PACKAGE_e100-firmware=y/# CONFIG_PACKAGE_e100-firmware is not set/' sdk/.config
 
     - name: Build luci-theme-design-gray
       run: |
