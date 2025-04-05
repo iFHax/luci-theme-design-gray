@@ -1,0 +1,59 @@
+
+name: Build LuCI Theme IPK (ImmortalWRT)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget python3 gh
+
+    - name: Download ImmortalWRT SDK (x86_64)
+      run: |
+        wget https://downloads.immortalwrt.org/releases/21.02.1/targets/x86/64/immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
+        tar -xf immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
+        mv immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64 immortalwrt-sdk
+
+    - name: Clone luci-theme-design-gray repository
+      run: |
+        git clone https://github.com/iFHax/luci-theme-design-gray.git
+
+    - name: Prepare the theme package
+      run: |
+        mkdir -p immortalwrt-sdk/package/luci-theme-design-gray
+        cp -r luci-theme-design-gray/* immortalwrt-sdk/package/luci-theme-design-gray/
+
+    - name: Build the IPK
+      run: |
+        cd immortalwrt-sdk
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        make defconfig
+        make package/luci-theme-design-gray/compile V=s
+
+    - name: List result
+      run: |
+        find immortalwrt-sdk/bin/ -name "*.ipk"
+
+    - name: Authenticate GitHub CLI
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+    - name: Create GitHub Release and Upload IPK
+      run: |
+        RELEASE_TAG="v1.0"  # Modify to your desired release tag
+        IPK_FILE=$(find immortalwrt-sdk/bin/packages/*/*/luci-theme-design-gray_*.ipk)
+        
+        # Create a release
+        gh release create $RELEASE_TAG $IPK_FILE --title "LuCI Theme Design Gray v1.0" --notes "Initial release of luci-theme-design-gray IPK."
