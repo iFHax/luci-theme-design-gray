@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget python3
+        sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget python3 gh
 
     - name: Download OpenWrt 21.02.1 SDK (x86_64)
       run: |
@@ -41,17 +41,14 @@ jobs:
       run: |
         find openwrt-sdk/bin/ -name "*.ipk"
 
-    - name: Create GitHub Release
-      id: create_release
-      uses: gh:softprops/action-gh-release@v1
-      with:
-        files: openwrt-sdk/bin/packages/*/*/luci-theme-design-gray_*.ipk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload the IPK to GitHub Release
+    - name: Authenticate GitHub CLI
       run: |
-        RELEASE_TAG="v1.0"  # Modify to your desired release tag (e.g., 'v1.0')
-        gh release create $RELEASE_TAG openwrt-sdk/bin/packages/*/*/luci-theme-design-gray_*.ipk --title "LuCI Theme Design Gray v1.0" --notes "Initial release of luci-theme-design-gray IPK."
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+    - name: Create GitHub Release and Upload IPK
+      run: |
+        RELEASE_TAG="v1.0"  # Modify to your desired release tag
+        IPK_FILE=$(find openwrt-sdk/bin/packages/*/*/luci-theme-design-gray_*.ipk)
+        
+        # Create a release
+        gh release create $RELEASE_TAG $IPK_FILE --title "LuCI Theme Design Gray v1.0" --notes "Initial release of luci-theme-design-gray IPK."
