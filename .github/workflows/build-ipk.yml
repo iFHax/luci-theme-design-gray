@@ -24,6 +24,10 @@ jobs:
         tar -xf openwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
         mv openwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64 openwrt-sdk
 
+    - name: Clone luci-theme-design-gray repository
+      run: |
+        git clone https://github.com/iFHax/luci-theme-design-gray.git
+
     - name: Prepare the theme package
       run: |
         mkdir -p openwrt-sdk/package/luci-theme-design-gray
