@@ -28,6 +28,13 @@ jobs:
         python3 -c "import distutils; print(distutils.__file__)" || echo "distutils not found"
         python3 --version
 
+    - name: Install Python3 distutils if not found
+      run: |
+        if ! python3 -c "import distutils" &> /dev/null; then
+          echo "Distutils module not found, installing..."
+          sudo apt-get install -y python3-distutils
+        fi
+
     - name: Download ImmortalWRT SDK
       run: |
         wget https://downloads.immortalwrt.org/releases/21.02.1/targets/x86/64/immortalwrt-sdk-21.02.1-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
