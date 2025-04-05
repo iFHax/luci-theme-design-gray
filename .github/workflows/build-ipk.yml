@@ -1,45 +1,38 @@
-name: Build OpenWRT with luci-theme-design-gray
+name: Build LuCI Theme IPK
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout this repository
+    - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Install build dependencies
+    - name: Install Dependencies
       run: |
         sudo apt update
         sudo apt install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext unzip file libssl-dev wget \
-                            python3.8 python3.8-distutils python3.8-venv libsqlite3-dev libtool python3-setuptools \
-                            python3-pip
-        sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
-        sudo update-alternatives --set python3 /usr/bin/python3.8
+                            python3 python3-distutils python3-pip
 
-    - name: Clone OpenWRT source
+    - name: Download OpenWRT SDK
       run: |
-        git clone https://github.com/openwrt/openwrt.git
-        cd openwrt
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
+        wget https://downloads.openwrt.org/releases/23.05.0/targets/x86/64/openwrt-sdk-23.05.0-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz
+        tar -xf openwrt-sdk-23.05.0-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz
+        mv openwrt-sdk-23.05.0-x86-64_gcc-12.3.0_musl.Linux-x86_64 openwrt
 
     - name: Clone luci-theme-design-gray
       run: |
         git clone https://github.com/iFHax/luci-theme-design-gray.git
+
+    - name: Prepare LuCI Theme Package
+      run: |
         mkdir -p openwrt/package/luci-theme-design-gray
         cp -r luci-theme-design-gray/* openwrt/package/luci-theme-design-gray/
 
-    - name: Configure build
+    - name: Configure SDK
       run: |
         cd openwrt
         echo "CONFIG_TARGET_x86=y" > .config
@@ -47,18 +40,13 @@ jobs:
         echo "CONFIG_PACKAGE_luci-theme-design-gray=y" >> .config
         make defconfig
 
-        # Disable specific firmware
-        sed -i 's/^CONFIG_PACKAGE_eip197-mini-firmware=y/# CONFIG_PACKAGE_eip197-mini-firmware is not set/' .config || true
-        sed -i 's/^CONFIG_PACKAGE_r8169-firmware=y/# CONFIG_PACKAGE_r8169-firmware is not set/' .config || true
-        sed -i 's/^CONFIG_PACKAGE_e100-firmware=y/# CONFIG_PACKAGE_e100-firmware is not set/' .config || true
-
-    - name: Build luci-theme-design-gray IPK
+    - name: Build luci-theme-design-gray
       run: |
         cd openwrt
-        make package/luci-theme-design-gray/compile V=s -j$(nproc)
+        make package/luci-theme-design-gray/compile -j$(nproc) V=s
 
     - name: Upload built IPKs as artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: luci-theme-design-gray-ipks
         path: |
